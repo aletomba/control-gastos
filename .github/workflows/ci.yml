@@ -33,18 +33,29 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Check google-services secret
+        id: check_secret
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
       - name: Write google-services.json
-        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+        if: steps.check_secret.outputs.available == 'true'
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
 
       - name: Build APK
-        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+        if: steps.check_secret.outputs.available == 'true'
         run: flutter build apk --release --no-pub
 
       - name: Upload APK artifact
-        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+        if: steps.check_secret.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
