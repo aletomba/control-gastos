@@ -65,7 +65,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-        run: flutter build apk --release --no-pub
+        run: flutter build apk --release --no-pub --verbose
 
       - name: Upload APK artifact
         if: steps.check_secret.outputs.available == 'true'
