@@ -58,10 +58,10 @@ class SantanderParser {
     return null;
   }
 
-  static double _parseArgentineAmount(String raw) {
+  static double? _parseArgentineAmount(String raw) {
     // Formato argentino: 1.234,56 → 1234.56
     final normalized = raw.replaceAll('.', '').replaceAll(',', '.');
-    return double.tryParse(normalized) ?? 0.0;
+    return double.tryParse(normalized);
   }
 
   static String? _extractMerchant(String body) {

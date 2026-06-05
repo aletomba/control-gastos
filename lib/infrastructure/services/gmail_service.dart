@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 /// Senders conocidos de los bancos
 const _santanderSender = 'mensajesyavisos@mails.santander.com.ar';
@@ -83,13 +84,14 @@ class GmailService {
         final body = _extractBody(full);
         final subject = _getHeader(full, 'Subject') ?? '';
         debugPrint('[GmailService] id=${msg.id} subject="$subject" bodyLen=${body?.length ?? 0}');
-        if (body != null) {
+        final date = _parseDate(full);
+        if (body != null && date != null) {
           results.add(RawEmail(
             id: msg.id!,
             sender: sender,
             subject: subject,
             body: body,
-            date: _parseDate(full),
+            date: date,
           ));
         }
       }
@@ -136,13 +138,14 @@ class GmailService {
         .value;
   }
 
-  DateTime _parseDate(gmail.Message message) {
+  DateTime? _parseDate(gmail.Message message) {
     final raw = _getHeader(message, 'Date');
-    if (raw == null) return DateTime.now();
+    if (raw == null) return null;
     try {
-      return DateTime.parse(raw);
+      final parsed = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US').parseStrict(raw);
+      return DateTime(parsed.year, parsed.month, parsed.day);
     } catch (_) {
-      return DateTime.now();
+      return null;
     }
   }
 }
