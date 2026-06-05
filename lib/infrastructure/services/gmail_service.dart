@@ -1,13 +1,14 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 
 /// Senders conocidos de los bancos
-const _santanderSender = 'notificaciones@servicios.santander.com.ar';
-const _mercadoPagoSender = 'no-reply@mail.mercadopago.com';
+const _santanderSender = 'mensajesyavisos@mails.santander.com.ar';
+const _mercadoPagoSender = 'no-reply@mercadopago.com.ar';
 
 const _gmailScope = 'https://www.googleapis.com/auth/gmail.readonly';
 const _tokenKey = 'gmail_access_token';
@@ -55,12 +56,16 @@ class GmailService {
     final results = <RawEmail>[];
     final senders = [_santanderSender, _mercadoPagoSender];
 
+    debugPrint('[GmailService] Iniciando búsqueda, since=$since');
+
     for (final sender in senders) {
       String query = 'from:$sender';
       if (since != null) {
         final epoch = since.millisecondsSinceEpoch ~/ 1000;
         query += ' after:$epoch';
       }
+
+      debugPrint('[GmailService] Query: $query');
 
       final listResponse = await gmailApi.users.messages.list(
         'me',
@@ -69,16 +74,20 @@ class GmailService {
       );
 
       final messages = listResponse.messages ?? [];
+      debugPrint('[GmailService] Encontrados ${messages.length} mensajes de $sender');
+
       for (final msg in messages) {
         if (msg.id == null) continue;
         final full = await gmailApi.users.messages.get('me', msg.id!,
             format: 'full');
         final body = _extractBody(full);
+        final subject = _getHeader(full, 'Subject') ?? '';
+        debugPrint('[GmailService] id=${msg.id} subject="$subject" bodyLen=${body?.length ?? 0}');
         if (body != null) {
           results.add(RawEmail(
             id: msg.id!,
             sender: sender,
-            subject: _getHeader(full, 'Subject') ?? '',
+            subject: subject,
             body: body,
             date: _parseDate(full),
           ));
@@ -86,6 +95,7 @@ class GmailService {
       }
     }
 
+    debugPrint('[GmailService] Total emails procesados: ${results.length}');
     client.close();
     return results;
   }
