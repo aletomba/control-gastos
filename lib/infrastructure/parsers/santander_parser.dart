@@ -4,24 +4,25 @@ import '../../domain/entities/transaction.dart';
 import '../services/gmail_service.dart';
 
 /// Parsea emails de notificación de Santander Argentina.
-/// Soporta compras con tarjeta de crédito y débito.
+/// Soporta compras con tarjeta, pagos de tarjeta, transferencias y consumos.
 class SantanderParser {
-  /// Retorna null si el email no corresponde a una notificación de compra de Santander.
+  /// Retorna null si el email no corresponde a una notificación de gasto de Santander.
   static Transaction? parse(RawEmail email) {
     final body = email.body;
 
-    // Detectar si es un email de compra
     if (!_isExpenseEmail(body)) return null;
 
     final amount = _extractAmount(body);
-    final merchant = _extractMerchant(body);
+    if (amount == null) return null;
+
+    final merchant = _isPaymentEmail(body)
+        ? (_extractPaymentMerchant(body) ?? 'PAGO TARJETA')
+        : (_extractMerchant(body) ?? 'SANTANDER');
     final cardLast4 = _extractCardLast4(body);
     final source = _extractSource(body);
 
-    if (amount == null || merchant == null) return null;
-
     return Transaction(
-      id: 0, // asignado por la BD
+      id: 0,
       amount: amount,
       merchant: merchant,
       date: email.date,
@@ -36,7 +37,24 @@ class SantanderParser {
     final lower = body.toLowerCase();
     return lower.contains('compra aprobada') ||
         lower.contains('consumo aprobado') ||
-        lower.contains('realizaste una compra');
+        lower.contains('realizaste una compra') ||
+        lower.contains('pagaste') ||
+        lower.contains('transferiste') ||
+        lower.contains('debitamos');
+  }
+
+  static bool _isPaymentEmail(String body) {
+    final lower = body.toLowerCase();
+    return lower.contains('debitamos') && lower.contains('pago de tu tarjeta');
+  }
+
+  static String? _extractPaymentMerchant(String body) {
+    final pattern = RegExp(r'pago de tu Tarjeta\s+([A-Z]+\s+[A-Z]+)', caseSensitive: false);
+    final match = pattern.firstMatch(body);
+    if (match != null) {
+      return 'PAGO TARJETA ${match.group(1)!.toUpperCase()}';
+    }
+    return 'PAGO TARJETA';
   }
 
   static double? _extractAmount(String body) {
