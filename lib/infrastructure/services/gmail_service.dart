@@ -142,6 +142,8 @@ class GmailService {
     final raw = _getHeader(message, 'Date');
     if (raw == null) return null;
 
+    debugPrint('[GmailService] RAW DATE: "$raw"');
+
     // Attempto 1: DateTime.parse (ISO 8601, RFC 1123 con GMT/UT)
     try {
       return DateTime.parse(raw);
@@ -150,6 +152,7 @@ class GmailService {
     // Attempto 2: RFC 2822 con timezone numérico (-0300, +0100, etc.)
     try {
       final cleaned = raw.replaceFirst(RegExp(r'\s*\([^)]*\)$'), '').trim();
+      debugPrint('[GmailService] CLEANED DATE: "$cleaned"');
       final parsed = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US').parseStrict(cleaned);
       return DateTime(parsed.year, parsed.month, parsed.day);
     } catch (_) {}
