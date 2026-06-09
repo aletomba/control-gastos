@@ -90,5 +90,47 @@ void main() {
       final result = SantanderParser.parse(email);
       expect(result?.gmailMessageId, 'unique-gmail-id-xyz');
     });
+
+    test('parsea pago de tarjeta correctamente', () {
+      final body = '''
+        Información sobre el pago de tu tarjeta
+        Debitamos \$ 558.890,34 de tu Cuenta en Pesos N° XXXX-4996
+        por el pago de tu Tarjeta SANTANDER VISA.
+        Tarjeta\tXXXX-XXX4669
+        Saldo en pesos\t\$ 540.709,69
+        Pago mínimo\t\$ 62.010,00
+      ''';
+
+      final result = SantanderParser.parse(makeEmail(body));
+
+      expect(result, isNotNull);
+      expect(result!.amount, 558890.34);
+      expect(result.merchant, contains('SANTANDER VISA'));
+      expect(result.source, TransactionSource.santanderCredito);
+    });
+
+    test('parsea email con pagaste', () {
+      final body = '''
+        Pagaste en MCDONALDS
+        COMERCIO: MCDONALDS
+        IMPORTE: \$ 4.500,00
+      ''';
+
+      final result = SantanderParser.parse(makeEmail(body));
+      expect(result, isNotNull);
+      expect(result!.amount, 4500.0);
+      expect(result.merchant, contains('MCDONALDS'));
+    });
+
+    test('parsea email con transferiste', () {
+      final body = '''
+        Transferiste a CUENTA PROPIA
+        IMPORTE: \$ 10.000,00
+      ''';
+
+      final result = SantanderParser.parse(makeEmail(body));
+      expect(result, isNotNull);
+      expect(result!.amount, 10000.0);
+    });
   });
 }
