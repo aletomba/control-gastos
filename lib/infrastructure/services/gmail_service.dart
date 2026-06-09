@@ -5,7 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 
 /// Senders conocidos de los bancos
 const _santanderSender = 'mensajesyavisos@mails.santander.com.ar';
@@ -142,7 +141,7 @@ class GmailService {
     final raw = _getHeader(message, 'Date');
     if (raw == null) return null;
     try {
-      final parsed = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US').parseStrict(raw);
+      final parsed = DateTime.parse(raw);
       return DateTime(parsed.year, parsed.month, parsed.day);
     } catch (_) {
       return null;
