@@ -22,8 +22,9 @@ class SyncEmailsUseCase {
   /// Retorna el número de transacciones nuevas insertadas
   Future<int> execute() async {
     final lastSync = await syncLogRepository.getLastSync('gmail');
-    // Si nunca se sincronizó, buscar los últimos 90 días
-    final since = lastSync ?? DateTime.now().subtract(const Duration(days: 90));
+    final since = lastSync != null
+        ? lastSync.subtract(const Duration(days: 7))
+        : DateTime.now().subtract(const Duration(days: 90));
     final emails = await gmailService.fetchExpenseEmails(since: since);
 
     int inserted = 0;
